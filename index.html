@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Tic Tac Toe - Menu</title>
+    <style>
+        :root { 
+            --neon-blue: #00f2ff; 
+            --neon-pink: #ff2d55; 
+            --neon-gold: #ffd700; 
+            --bg-dark: #02050a; 
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+            background: radial-gradient(circle at center, #0a192f 0%, #02050a 100%);
+        }
+
+        /* Beat-synced grid background */
+        #grid-bg {
+            position: absolute; width: 200%; height: 100%; top: 0; left: -50%;
+            background-image: linear-gradient(var(--neon-blue) 1px, transparent 1px), 
+                              linear-gradient(90deg, var(--neon-blue) 1px, transparent 1px);
+            background-size: 50px 50px; mask-image: linear-gradient(to bottom, transparent, black);
+            opacity: 0.1; transform: perspective(500px) rotateX(60deg); 
+            z-index: 1; transition: opacity 0.05s ease-out;
+        }
+
+        /* Splash Screen Overlay */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.5s;
+        }
+        #overlay h2 { color: var(--neon-blue); letter-spacing: 5px; margin-bottom: 20px; animation: blink 1.5s infinite; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .content-wrap { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; }
+
+        h1 { font-size: 4rem; text-transform: uppercase; letter-spacing: 12px; color: var(--neon-blue); margin-bottom: 20px; font-style: italic; }
+        .pulse { animation: neon-pulse 0.6s ease-in-out infinite; }
+        @keyframes neon-pulse { 
+            0%, 100% { text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue); transform: scale(1); }
+            50% { text-shadow: 0 0 25px var(--neon-blue), 0 0 50px var(--neon-blue); transform: scale(1.03); }
+        }
+
+        .settings-panel { 
+            background: rgba(2, 5, 10, 0.9); border: 2px solid var(--neon-gold); 
+            backdrop-filter: blur(10px); padding: 25px; border-radius: 20px; 
+            width: min(90vw, 350px); text-align: center; margin-bottom: 25px; 
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); 
+        }
+        
+        #gridValue { font-size: 3.5rem; font-weight: 900; color: var(--neon-gold); text-shadow: 0 0 15px var(--neon-gold); display: block; }
+        #winGuide { display: block; color: var(--neon-pink); font-weight: bold; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 15px; }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { height: 8px; background: rgba(255, 215, 0, 0.1); border-radius: 4px; border: 1px solid var(--neon-gold); }
+        input[type=range]::-webkit-slider-thumb { height: 24px; width: 24px; border-radius: 50%; background: var(--neon-gold); -webkit-appearance: none; margin-top: -9px; box-shadow: 0 0 15px var(--neon-gold); cursor: pointer; }
+
+        .menu-container { display: flex; flex-direction: column; gap: 15px; width: min(90vw, 350px); }
+        .menu-btn { padding: 18px; background: rgba(0, 242, 255, 0.05); border: 2px solid var(--neon-blue); color: var(--neon-blue); border-radius: 12px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.3s; text-align: center; text-decoration: none; font-size: 1.1rem; letter-spacing: 2px; }
+        .menu-btn:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 30px var(--neon-blue); transform: translateY(-3px); }
+        
+        .pink-btn { border-color: var(--neon-pink); color: var(--neon-pink); }
+        .pink-btn:hover { background: var(--neon-pink); color: black; box-shadow: 0 0 30px var(--neon-pink); }
+        
+        /* Arcade Button Styles */
+        .gold-btn { border-color: var(--neon-gold); color: var(--neon-gold); }
+        .gold-btn:hover { background: var(--neon-gold); color: black; box-shadow: 0 0 30px var(--neon-gold); }
+
+        /* Coming Soon State */
+        .coming-soon { 
+            opacity: 0.4; 
+            cursor: not-allowed; 
+            border-style: dashed; 
+            pointer-events: none; 
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="overlay" onclick="startGame()">
+        <h1>NEON TIC</h1>
+        <h2>TAP TO START</h2>
+    </div>
+
+    <div id="grid-bg"></div>
+
+    <div class="content-wrap">
+        <h1 id="logo">NEON TIC</h1>
+        
+        <div class="settings-panel">
+            <span style="font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 2px;">Grid Size</span>
+            <span id="gridValue">3 x 3</span>
+            <span id="winGuide">Connect 3 to Win</span>
+            <input type="range" id="gridSlider" min="3" max="10" step="1" value="3" oninput="updateGrid(this.value)">
+        </div>
+
+        <div class="menu-container">
+            <a href="#" class="menu-btn" onclick="launch('PvsAi.html')">Single Player</a>
+            <a href="#" class="menu-btn pink-btn" onclick="launch('1vs1.html')">Two Players</a>
+            <div class="menu-btn gold-btn coming-soon">Arcade Mode: Coming Soon</div>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let mainGain, step = 0;
+        let currentSize = 3;
+
+        const bassNotes = [110, 110, 110, 110, 82, 82, 98, 123]; 
+        const leadNotes = [440, 0, 440, 493, 523, 0, 587, 392];
+
+        function startGame() {
+            document.getElementById('overlay').style.opacity = '0';
+            setTimeout(() => document.getElementById('overlay').remove(), 500);
+            
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('logo').classList.add('pulse');
+            startMusicEngine();
+        }
+
+        function playKick(time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(150, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.12);
+            gain.gain.setValueAtTime(0.6, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.12);
+            osc.connect(gain); gain.connect(mainGain);
+            osc.start(time); osc.stop(time + 0.12);
+            
+            setTimeout(() => {
+                const bg = document.getElementById('grid-bg');
+                if(bg) bg.style.opacity = "0.4";
+                setTimeout(() => { if(bg) bg.style.opacity = "0.1" }, 80);
+            }, (time - audioCtx.currentTime) * 1000);
+        }
+
+        function playHat(time) {
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const src = audioCtx.createBufferSource();
+            src.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass'; filter.frequency.value = 8000;
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(0.04, time);
+            g.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+            src.connect(filter); filter.connect(g); g.connect(mainGain);
+            src.start(time);
+        }
+
+        function startMusicEngine() {
+            mainGain = audioCtx.createGain();
+            mainGain.gain.value = 0.15;
+            mainGain.connect(audioCtx.destination);
+
+            setInterval(() => {
+                const now = audioCtx.currentTime;
+                if (step % 2 === 0) playKick(now);
+                playHat(now + 0.15);
+
+                const b = audioCtx.createOscillator();
+                const bg = audioCtx.createGain();
+                b.type = 'sawtooth';
+                b.frequency.setValueAtTime(bassNotes[step % 8], now);
+                bg.gain.setValueAtTime(0.12, now);
+                bg.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                b.connect(bg); bg.connect(mainGain);
+                b.start(now); b.stop(now + 0.25);
+
+                if (leadNotes[step % 8] > 0) {
+                    const l = audioCtx.createOscillator();
+                    const lg = audioCtx.createGain();
+                    l.type = 'square';
+                    l.frequency.setValueAtTime(leadNotes[step % 8], now);
+                    lg.gain.setValueAtTime(0.05, now);
+                    lg.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    l.connect(lg); lg.connect(mainGain);
+                    l.start(now); l.stop(now + 0.15);
+                }
+                step++;
+            }, 300);
+        }
+
+        function updateGrid(val) {
+            currentSize = val;
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.frequency.value = 200 + (val * 40);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+
+            document.getElementById('gridValue').innerText = `${val} x ${val}`;
+            let target = (val <= 3) ? 3 : (val <= 6 ? 4 : 5);
+            document.getElementById('winGuide').innerText = `Connect ${target} to Win`;
+        }
+
+        function launch(page) {
+            const osc = audioCtx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.value = 600;
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            
+            setTimeout(() => { window.location.href = `${page}?size=${currentSize}`; }, 150);
+        }
+    </script>
+</body>
+</html>
